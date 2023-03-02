@@ -1,24 +1,32 @@
 package com.masai.Controller;
 
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
+
+
 import org.springframework.beans.factory.annotation.Autowired;
+
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.DeleteMapping;
+
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.ModelAndView;
+
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.servlet.view.RedirectView;
 
@@ -36,6 +44,9 @@ import com.masai.Repository.UserSessionRepository;
 public class UserController {
 	
 	@Autowired
+	private MongoTemplate mongoTemplate;
+	
+	@Autowired
 	private UserSessionRepository userSessionRepo;
 	
 	@Autowired
@@ -49,6 +60,11 @@ public class UserController {
 			                @RequestParam String lattitude, @RequestParam String Longitude,@RequestParam String browserName,RedirectAttributes redirectAttributes) {
 		final RedirectView redirectViewlogin = new RedirectView("/login", true);
 		 Optional<User> userOpt	= userRepository.findByEmail(username);
+		 
+		 List<UserDetails> userdetails1 =  udRepository.findByUsername(username);
+
+		 
+			
 		 if(userOpt.isPresent()) {
 			 UserSession loggedInUser = userSessionRepo.findByUsername(username);
 			 if(loggedInUser ==null) {
@@ -71,11 +87,18 @@ public class UserController {
 							ud.setUsername(username);
 							ud.setLattitude(lattitude);
 							udRepository.save(ud);
-							List<UserDetails> userdetails =  udRepository.findByUsername(username);
-							redirectAttributes.addFlashAttribute("list", userdetails);
-//							for (UserDetails userDetails2 : userdetails) {
-//								redirectAttributes.addFlashAttribute("list", userDetails2.getUsername());
-//							}
+							
+							List<UserDetails> userdetails2 =  udRepository.findByUsername(username);
+							
+							for (UserDetails userDetails2 : userdetails2) {
+								redirectAttributes.addFlashAttribute("username", userDetails2.getUsername());
+								redirectAttributes.addFlashAttribute("browser", userDetails2.getBrowserName());
+								redirectAttributes.addFlashAttribute("osname", userDetails2.getOsName());
+								redirectAttributes.addFlashAttribute("lattitude", userDetails2.getLattitude());
+								redirectAttributes.addFlashAttribute("longitude", userDetails2.getLongitude());
+								redirectAttributes.addFlashAttribute("logintime", userDetails2.getLoginTime());
+								redirectAttributes.addFlashAttribute("sessiontime", userDetails2.getSessionTime());
+								}
 							
 							return redirectViewlogin;
 				 		
@@ -85,14 +108,23 @@ public class UserController {
 				 
 			 }else {
 				
-				 redirectAttributes.addFlashAttribute("errorMsg", "User already logged in");	
+//				 redirectAttributes.addFlashAttribute("errorMsg", "User already logged in");
+				    UserDetails userDetails2 = userdetails1.get(userdetails1.size()-2);
+					redirectAttributes.addFlashAttribute("username", userDetails2.getUsername());
+					redirectAttributes.addFlashAttribute("browser", userDetails2.getBrowserName());
+					redirectAttributes.addFlashAttribute("osname", userDetails2.getOsName());
+					redirectAttributes.addFlashAttribute("lattitude", userDetails2.getLattitude());
+					redirectAttributes.addFlashAttribute("longitude", userDetails2.getLongitude());
+					redirectAttributes.addFlashAttribute("logintime", userDetails2.getLoginTime());
+					redirectAttributes.addFlashAttribute("sessiontime", userDetails2.getSessionTime());
+					
 			 }
 		 }else {
 			 redirectAttributes.addFlashAttribute("errorMsg", "User not found please signup first!!!");	
 		 }
 		
 		redirectAttributes.addFlashAttribute("login","error");
-        
+		
 			return redirectViewlogin;
 	}
 	
@@ -102,23 +134,7 @@ public class UserController {
 		return "login";
 	}
 	
-	@GetMapping("/welcome")
-	public String welcome(Model model) {
-		List<UserDetails> list  = udRepository.findAll();
-		model.addAttribute("list",list);
-//		for (UserDetails userDetails : list) {
-//			model.addAttribute("username",userDetails.getUsername());
-//			model.addAttribute("browser",userDetails.getBrowserName());
-//			model.addAttribute("osname",userDetails.getOsName());
-//			model.addAttribute("lattitude",userDetails.getLattitude());
-//			model.addAttribute("longitude",userDetails.getLongitude());
-//			model.addAttribute("logtime",userDetails.getLoginTime());
-//			model.addAttribute("logsession",userDetails.getSessionTime());
-//		}
-		
-		
-		return "welcome";
-	}
+
 	
 	@GetMapping("/signup")
 	public String SignupLauncher() {
@@ -156,10 +172,19 @@ public class UserController {
 		
 		if(loggedUser!=null) {
 			List<UserDetails> userdetails =  udRepository.findByUsername(username);
-			UserDetails userDetails2 = userdetails.get(0);
+			UserDetails userDetails2 = userdetails.get(userdetails.size()-1);
 			LocalTime currenTime = LocalTime.now();
-			userDetails2.setSessionTime(currenTime);
+			
+			Long timeDiff = (userDetails2.getLoginTime().until(currenTime, ChronoUnit.MINUTES)); 
+
+			userDetails2.setSessionTime(timeDiff);
+			Query query = new Query().addCriteria(Criteria.where("username").is(username));
+			Update update =new Update().set("sessionTime", timeDiff);
+//			FindAndModifyOptions options = new FindAndModifyOptions().returnNew(true).upsert(false);
+			mongoTemplate.findAndModify(query, update,UserDetails.class);
+			
 			udRepository.save(userDetails2);
+			
 			userSessionRepo.delete(loggedUser);
 			
 			final RedirectView redirectViewlogin = new RedirectView("/login", true);
@@ -185,23 +210,7 @@ public class UserController {
 		return "logout";
 	}
 	
-//	@GetMapping("/list")
-//	public ModelAndView listAction() {
-//
-//		List<String> empList = new ArrayList<>();
-//		empList.add("Atul");
-//		empList.add("Abhinav");
-//		empList.add("Prince");
-//		empList.add("Gaurav");
-//
-//		ModelAndView mv = new ModelAndView();
-//
-//		mv.setViewName("index");
-//		mv.addObject("empList", empList);
-//
-//		return mv;
-//
-//	}
+
 	 
 
 }

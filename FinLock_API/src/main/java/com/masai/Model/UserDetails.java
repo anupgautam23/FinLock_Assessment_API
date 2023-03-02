@@ -16,7 +16,7 @@ public class UserDetails {
 	private LocalTime loginTime;
 	private String osName;
 	private String browserName;
-	private LocalTime sessionTime;
+	private Long sessionTime;
 	
 
 }
