@@ -1,11 +1,16 @@
 <%@ page language="java" contentType="text/html; charset=ISO-8859-1"
     pageEncoding="ISO-8859-1"%>
+    <%@ page isELIgnored = "false" %>
+
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+  
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset="ISO-8859-1">
 <title>Login Page</title>
 </head>
+
 <style>
    
     h1{
@@ -57,7 +62,7 @@
 <body>
 
 <h1>  Login Page </h1>
-<h2>${errorMsg}</h2>
+
 
 <form method="post">
     <input type="text" name="username" placeholder="Email or Username">
@@ -72,16 +77,17 @@
     
 
     <br>
-
+       
     
     <button> Login </button>
+    <h2>${list}</h2>  
+
 </form>
 <script>
 
     //operating system fetcher
 
-        var oss = document.getElementById("os"); 
-		// HTMLDocument.prototype.e = document.getElementById;	
+        var oss = document.getElementById("os"); 	
 		
 		
 		var Name = "Not known";

@@ -1,10 +1,13 @@
 <%@ page language="java" contentType="text/html; charset=ISO-8859-1"
     pageEncoding="ISO-8859-1"%>
+<%@ page isELIgnored="false" %>
+ <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+ 
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset="ISO-8859-1">
-<title>Logout Page</title>
+<title>index Page</title>
 </head>
 <style>
    
@@ -56,16 +59,20 @@
 </style>
 <body>
 
-<h1>  logout Page </h1>
-<h2>${errorMsg}</h2>
+<h1> list itertaor  </h1>
 
-<form method="post">
-    <input type="text" name="username" placeholder="Email or Username">
-    <br>   
 
-    
-    <button> Logout </button>
-</form>
+<p><b>Simple List:</b><p> -->
+	
+	${empList}
+	
+	<p><b>Iterated List:</b><p>
+
+	<ol>	
+       <c:forEach var = "emp" items = "${empList}">
+            <li>${emp}</li>
+        </c:forEach>
+	</ol> 
 
 </body>
 </html>
